@@ -1,41 +1,34 @@
 // https://codelearn.io/sharing/hack-game-half-life-voi-c
 // https://stackoverflow.com/a/13977501
 
-#include <Windows.h>
+// Bắt buộc phải #include <windows.h> ở trước <TlHelp32.h> nếu không sẽ có lỗi
+#include <windows.h>
+#include <TlHelp32.h>
 #include <iostream>
 #include <vector>
-#include <TlHelp32.h>
 #include <tchar.h>
-
 
 using namespace std;
 
 // convert 'char*' to 'const wchar_t*
-const wchar_t *GetWC(const char *c)
-{
-    const size_t cSize = strlen(c)+1;
-    wchar_t* wc = new wchar_t[cSize];
-    mbstowcs (wc, c, cSize);
+const wchar_t *GetWC(const char *c) {
+    const size_t cSize = strlen(c) + 1;
+    wchar_t *wc = new wchar_t[cSize];
+    mbstowcs(wc, c, cSize);
 
     return wc;
 }
 
-// Hàm lấy địa chỉ của module "hw.dll"
-uintptr_t getModuleBaseAddress(const wchar_t* modName, DWORD procId)
-{
+uintptr_t getModuleBaseAddress(const wchar_t *modName, DWORD procId) {
     uintptr_t modBaseAddr = 0;
     HANDLE hSnap = CreateToolhelp32Snapshot(TH32CS_SNAPMODULE | TH32CS_SNAPMODULE32, procId);
-    if (hSnap != INVALID_HANDLE_VALUE)
-    {
+    if (hSnap != INVALID_HANDLE_VALUE) {
         MODULEENTRY32 modEntry;
         modEntry.dwSize = sizeof(modEntry);
-        if (Module32First(hSnap, &modEntry))
-        {
-            do
-            {
+        if (Module32First(hSnap, &modEntry)) {
+            do {
 
-                if (!_wcsicmp(GetWC(modEntry.szModule), modName))
-                {
+                if (!_wcsicmp(GetWC(modEntry.szModule), modName)) {
                     modBaseAddr = (uintptr_t)modEntry.modBaseAddr;
                     break;
                 }
@@ -46,7 +39,7 @@ uintptr_t getModuleBaseAddress(const wchar_t* modName, DWORD procId)
     return modBaseAddr;
 }
 
-template<class T>
+template <class T>
 void change(DWORD pid, LPVOID address, T value) {
     HANDLE process = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pid);
     if (!process) {
@@ -57,52 +50,68 @@ void change(DWORD pid, LPVOID address, T value) {
         cout << "Couldn't write process memory" << endl;
     }
 }
- 
+
 int main() {
     DWORD pid;
     HWND hGameWindow = FindWindow(NULL, _T("Age of Empires HD"));
     GetWindowThreadProcessId(hGameWindow, &pid);
     HANDLE pHandle = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pid);
 
-    DWORD baseAddress;
-    DWORD moduleAddress = getModuleBaseAddress(L"empires.exe", pid);
+    const wchar_t *name;
+    int type = 0;
 
+    cout << "1 - empires.exe\n";
+    cout << "2 - EMPIRESX.EXE\n";
+
+    cout << "Nhap phien ban AOE: ";
+    cin >> type;
+    cin.ignore();
+
+    if (type == 1) {
+        name = L"empires.exe";
+    } else if (type == 2) {
+        name = L"EMPIRESX.EXE";
+    } else {
+        cout << "Khong hop le!";
+        return 0;
+    }
+
+    DWORD moduleAddress = getModuleBaseAddress(name, pid);
+
+    DWORD baseAddress;
     if (!ReadProcessMemory(pHandle, (LPVOID)(moduleAddress + 0x00188144), &baseAddress, sizeof(baseAddress), NULL)) {
-        cout << "Couldn't read process memory";
+        cout << "Couldn't read process memory\n";
+        cin.get();
         return -1;
     }
 
-    
-    
     if (!ReadProcessMemory(pHandle, (LPVOID)(baseAddress + 0x4BC), &baseAddress, sizeof(baseAddress), NULL)) {
-        cout << "Couldn't read process memory";
+        cout << "Couldn't read process memory\n";
         return -1;
     }
 
     if (!ReadProcessMemory(pHandle, (LPVOID)(baseAddress + 0xF8), &baseAddress, sizeof(baseAddress), NULL)) {
-        cout << "Couldn't read process memory";
+        cout << "Couldn't read process memory\n";
+        cin.get();
         return -1;
     }
 
     if (!ReadProcessMemory(pHandle, (LPVOID)(baseAddress + 0x50), &baseAddress, sizeof(baseAddress), NULL)) {
         cout << "Couldn't read process memory";
+        cin.get();
         return -1;
     }
 
-    DWORD meatAddress = baseAddress;
+    DWORD foodAddress = baseAddress;
     DWORD goldAddress = baseAddress + 0xC;
     DWORD woodAddress = baseAddress + 0x4;
     DWORD stoneAddress = baseAddress + 0x8;
- 
-
-
 
     // cout << "Module address:" << hex << moduleAddress << endl;
 
     // cout << "Base address:" << hex << baseAddress << endl;
 
     // cout << "Gold address:" << hex << woodAddress << endl;
-    
 
     float meat;
     float wood;
@@ -111,10 +120,14 @@ int main() {
 
     meat = wood = gold = stone = 50000;
 
-    change(pid, (LPVOID) meatAddress, meat);
-    change(pid, (LPVOID) woodAddress, wood);
-    change(pid, (LPVOID) goldAddress, gold);
-    change(pid, (LPVOID) stoneAddress, stone);
-         
+    change(pid, (LPVOID)foodAddress, meat);
+    change(pid, (LPVOID)woodAddress, wood);
+    change(pid, (LPVOID)goldAddress, gold);
+    change(pid, (LPVOID)stoneAddress, stone);
+
+    cout << "Xong!\n";
+    // system("pause");
+    cin.get();
+
     return 0;
 }
