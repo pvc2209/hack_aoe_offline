@@ -3,10 +3,10 @@
 
 // Bắt buộc phải #include <windows.h> ở trước <TlHelp32.h> nếu không sẽ có lỗi
 #include <windows.h>
-#include <TlHelp32.h>
 #include <iostream>
 #include <vector>
 #include <tchar.h>
+#include <TlHelp32.h>
 
 using namespace std;
 
@@ -79,27 +79,21 @@ int main() {
     DWORD moduleAddress = getModuleBaseAddress(name, pid);
 
     DWORD baseAddress;
+
     if (!ReadProcessMemory(pHandle, (LPVOID)(moduleAddress + 0x00188144), &baseAddress, sizeof(baseAddress), NULL)) {
         cout << "Couldn't read process memory\n";
         cin.get();
         return -1;
     }
 
-    if (!ReadProcessMemory(pHandle, (LPVOID)(baseAddress + 0x4BC), &baseAddress, sizeof(baseAddress), NULL)) {
-        cout << "Couldn't read process memory\n";
-        return -1;
-    }
+    vector<DWORD> offsets = {0x4BC, 0xF8, 0x50};
 
-    if (!ReadProcessMemory(pHandle, (LPVOID)(baseAddress + 0xF8), &baseAddress, sizeof(baseAddress), NULL)) {
-        cout << "Couldn't read process memory\n";
-        cin.get();
-        return -1;
-    }
-
-    if (!ReadProcessMemory(pHandle, (LPVOID)(baseAddress + 0x50), &baseAddress, sizeof(baseAddress), NULL)) {
-        cout << "Couldn't read process memory";
-        cin.get();
-        return -1;
+    for (const auto &offset : offsets) {
+        if (!ReadProcessMemory(pHandle, (LPVOID)(baseAddress + offset), &baseAddress, sizeof(baseAddress), NULL)) {
+            cout << "Couldn't read process memory\n";
+            cin.get();
+            return -1;
+        }
     }
 
     DWORD foodAddress = baseAddress;
@@ -118,7 +112,7 @@ int main() {
     float gold;
     float stone;
 
-    meat = wood = gold = stone = 50000;
+    meat = wood = gold = stone = 99999;
 
     change(pid, (LPVOID)foodAddress, meat);
     change(pid, (LPVOID)woodAddress, wood);

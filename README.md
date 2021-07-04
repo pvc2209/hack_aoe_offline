@@ -1,1 +1,1 @@
-Set 50000 gỗ, vàng, đá, thịt cho AOE 1 offline :v
+Set 99999 gỗ, vàng, đá, thịt cho AOE 1 offline :v
